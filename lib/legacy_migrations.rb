@@ -172,7 +172,7 @@ module LegacyMigrations
       end
       if columns[:id]
         if (new_record = @to_table.find_by_id(columns[:id]))
-          new_record.attributes(columns)
+          new_record.attributes = columns
         else
           new_record = @to_table.new(columns)
           new_record.id = columns[:id]
