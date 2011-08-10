@@ -1,8 +1,10 @@
-require 'legacy_migrations/transformations'
 require 'legacy_migrations/future_storage'
-require 'legacy_migrations/squirrel'
-require 'legacy_migrations/source_iterators'
 require 'legacy_migrations/row_matchers'
+require 'legacy_migrations/source_iterators'
+require 'legacy_migrations/squirrel'
+require 'legacy_migrations/status_report'
+require 'legacy_migrations/transformations'
+
 module LegacyMigrations
 
   # Define a source and destination table to transfer data
@@ -21,12 +23,12 @@ module LegacyMigrations
   #   _:active\_record_: Assumes the From option is a class that inherits
   #   from ActiveRecord::Base, then iterates through each record of From
   #   table by using *From*.all.each...
-  #   _:other_: Assumes the From option is an iterable 'collection' whose 
+  #   _:other_: Assumes the From option is an iterable 'collection' whose
   #   elements/items can respond to all source methods speficied in the given block.
   # * <tt>:store_as</tt> - Stores the generated destination record as a key
-  #   that is retrievable in other transformations. Note that for this to work, the 
+  #   that is retrievable in other transformations. Note that for this to work, the
   #   source object must respond to the method <tt>id</tt> which returns
-  #   a value that is unique for all rows within the table (usually 
+  #   a value that is unique for all rows within the table (usually
   #   this is just a primary key).
   #
   #   _Example_
@@ -39,7 +41,7 @@ module LegacyMigrations
   #     stored 'new_animal', :to => :species
   #   end
   #   </tt>
-  #   
+  #
   def transfer_from(from_table, *args, &block)
 
     configure_transfer(from_table, *args) { yield }
@@ -60,13 +62,13 @@ module LegacyMigrations
   # This method accepts all of the same options as <tt>transfer_from</tt>.
   #
   # In addition, you'll need to use a series of columns that match data
-  # from the source to the destination. For example, if your source  and 
+  # from the source to the destination. For example, if your source  and
   # destination data have a social security number, then you'd use the
   # social security number to match records from the two rows. The following
   # is how you would do that.
   #
   # <tt>
-  # update_from SourceTable, :to => DestinationTable do 
+  # update_from SourceTable, :to => DestinationTable do
   #   based_on do
   #     ssn == from.social_security_number
   #   end
@@ -77,7 +79,7 @@ module LegacyMigrations
   #
   # Note that when using the 'based_on' method, the left-hannd item always
   # corresponds to a column method on the destination table.
-  # 
+  #
   # The methods available in the based_on block correspond to the well-known
   # squirrel plugin's syntax. Here's a quick review of the possible operators:
   #
@@ -100,7 +102,7 @@ module LegacyMigrations
   #
   # ==== Options
   #
-  # 
+  #
   def update_from(from_table, *args, &block)
 
     configure_transfer(from_table, *args) { yield }
@@ -168,8 +170,20 @@ module LegacyMigrations
         result[attributes[0]]= attributes[1].call(from_record)
         result
       end
-      new_record = @to_table.new(columns)
+      if columns[:id]
+        if (new_record = @to_table.find_by_id(columns[:id]))
+          new_record.attributes(columns)
+        else
+          new_record = @to_table.new(columns)
+          new_record.id = columns[:id]
+        end
+      else
+        new_record = @to_table.new(columns)
+      end
+      new_record.updated_at = columns[:updated_at] if columns[:updated_at]
+      new_record.created_at = columns[:created_at] if columns[:created_at]
 
+      ActiveRecord::Base.record_timestamps = false
       if @options[:validate]
         report_validation_errors(new_record, from_record, 'insert')
       else
@@ -177,6 +191,7 @@ module LegacyMigrations
         @current_operation.record_insert(new_record)
       end
       store_as(new_record, from_record)
+      ActiveRecord::Base.record_timestamps = true
   end
 
   def store_as(new_record, from_record)
@@ -201,4 +216,3 @@ include LegacyMigrations
 include LegacyMigrations::Transformations
 include LegacyMigrations::SourceIterators
 include LegacyMigrations::RowMatchers
-
