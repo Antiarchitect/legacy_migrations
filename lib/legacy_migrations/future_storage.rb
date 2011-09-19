@@ -1,3 +1,5 @@
+require 'singleton'
+
 module LegacyMigrations
   class FutureStorage < Hash
     include Singleton
