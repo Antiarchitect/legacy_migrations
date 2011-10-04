@@ -54,6 +54,11 @@ module LegacyMigrations
     source_iterator(@limit, @type).each do |from_record|
       new_destination_record(from_record)
     end
+    
+    # Rewinding primary key.
+    sql = "SELECT SETVAL('#{@to_table.sequence_name}', (SELECT MAX(id) FROM #{@to_table.table_name}) + 1);"
+    ActiveRecord::Base.connection.execute(sql)
+    
     @status_report
   end
 
