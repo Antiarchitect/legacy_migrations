@@ -13,12 +13,12 @@ Gem::Specification.new do |s|
   s.description = %q{Rails plugin for transferring or updating data between two db structures.}
   s.email = %q{bernardo.telles@dms.myflorida.com}
   s.extra_rdoc_files = [
-    "README"
+    "README.md"
   ]
   s.files = [
     ".gitignore",
      "MIT-LICENSE",
-     "README",
+     "README.md",
      "Rakefile",
      "VERSION",
      "config/database.yml",
