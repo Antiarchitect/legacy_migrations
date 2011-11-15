@@ -50,4 +50,4 @@ Copyright (c) 2010 Bernie Telles, released under the MIT license
 
 This fork improves legacy_migrations gem to preserve updated_at and created_at timestamps, id of a record (when record exist it just updates it).
 
-Andrey Voronkov, http://evrone.com "Evrone.com"
+Andrey Voronkov, [Evrone.com](http://evrone.com)
